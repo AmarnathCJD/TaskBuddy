@@ -1,0 +1,683 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>My Tasks - AmarnathCJD</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+    <meta name="theme-color" content="#0b0f12" />
+    <meta name="description" content="A simple task management app with local storage support.
+    Add, edit, and delete tasks with priority and deadline features. Tasks persist in your browser
+    and can be reordered by dragging.">
+    <meta name="keywords" content="todo, task manager, local storage, drag and
+    drop, priority, deadline, simple todo app, minimal todo app">
+    <meta name="author" content="AmarnathCJD">
+    <meta name="robots" content="index, follow">
+
+    <style>
+        :root {
+            --bg: #0b0f12;
+            --card: #0f1417;
+            --muted: #98a0a6;
+            --accent: #6ee7b7;
+            --danger: #ff6b6b;
+            --glass: rgba(255, 255, 255, 0.03);
+            font-family: 'Poppins', sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background:
+                radial-gradient(800px 400px at 10% 10%, rgba(110, 231, 183, 0.04), transparent 10%),
+                radial-gradient(700px 350px at 90% 90%, rgba(106, 97, 255, 0.03), transparent 10%),
+                var(--bg);
+            color: #e6eef3;
+            -webkit-font-smoothing: antialiased;
+            padding: 16px;
+        }
+
+        .wrap {
+            max-width: 980px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 4px;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: clamp(18px, 4vw, 22px);
+            letter-spacing: 0.2px;
+            margin-bottom: 5px;
+        }
+
+        .sub {
+            color: var(--muted);
+            font-size: clamp(12px, 3vw, 13px);
+        }
+
+        .panel {
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.01));
+            border-radius: 12px;
+            padding: 14px;
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            box-shadow: 0 6px 18px rgba(2, 6, 8, 0.6);
+        }
+
+        form .row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 8px;
+            flex-wrap: wrap;
+        }
+
+        input,
+        textarea,
+        select,
+        button {
+            background: var(--glass);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            color: inherit;
+            padding: 10px 12px;
+            border-radius: 8px;
+            font-size: clamp(14px, 3vw, 15px);
+            transition: all 0.2s ease;
+            width: 100%;
+        }
+
+
+        input:focus,
+        textarea:focus,
+        select:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 2px rgba(110, 231, 183, 0.15);
+        }
+
+        select {
+            appearance: none;
+            background-color: #222;
+            cursor: pointer;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        label {
+            font-size: 13px;
+            color: var(--muted);
+            display: block;
+            margin-bottom: 6px;
+        }
+
+        .btn {
+            cursor: pointer;
+            padding: 10px 12px;
+            border-radius: 10px;
+            border: none;
+            background: transparent;
+            color: var(--accent);
+            font-weight: 600;
+            transition: all 0.2s ease;
+            font-size: clamp(14px, 3vw, 15px);
+            white-space: nowrap;
+        }
+
+        .btn:hover {
+            background: rgba(110, 231, 183, 0.08);
+        }
+
+        .btn.ghost {
+            color: var(--muted)
+        }
+
+        .btn.danger {
+            color: var(--danger)
+        }
+
+        .small {
+            font-size: 13px;
+            padding: 8px 10px;
+        }
+
+        .list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .task {
+            background: linear-gradient(180deg, rgba(255, 255, 255, 0.012), rgba(255, 255, 255, 0.008));
+            padding: 12px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+            cursor: grab;
+            transition: background 0.2s ease;
+            flex-wrap: wrap;
+        }
+
+        .task:hover {
+            background: rgba(255, 255, 255, 0.04);
+        }
+
+        .task.dragging {
+            opacity: 0.5;
+            transform: scale(0.995)
+        }
+
+        .task.done {
+            opacity: 0.7;
+        }
+
+        .task.done .meta .title,
+        .task.done .meta .desc {
+            text-decoration: line-through;
+            color: var(--muted);
+        }
+
+        .task .meta {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .title {
+            font-size: 15px;
+            font-weight: 600;
+            word-break: break-word;
+            transition: all 0.2s ease;
+        }
+
+        .desc {
+            font-size: 13px;
+            color: var(--muted);
+            margin-top: 6px;
+            word-break: break-word;
+            transition: all 0.2s ease;
+        }
+
+        .right {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            align-items: flex-end;
+            min-width: 120px;
+        }
+
+        .pill {
+            font-size: 12px;
+            padding: 6px 10px;
+            border-radius: 999px;
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            background: rgba(0, 0, 0, 0.12);
+            white-space: nowrap;
+        }
+
+        .prio-low {
+            color: #9ae6b4;
+        }
+
+        .prio-med {
+            color: #f6e05e;
+        }
+
+        .prio-high {
+            color: #feb2b2;
+        }
+
+        footer {
+            margin-top: 18px;
+            color: var(--muted);
+            font-size: 13px;
+            text-align: center;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 8px;
+            margin-top: 8px;
+            flex-wrap: wrap;
+        }
+
+        .form-col {
+            flex: 1;
+            min-width: 150px;
+        }
+
+        .actions {
+            display: flex;
+            gap: 8px;
+            margin-top: auto;
+            flex-wrap: wrap;
+        }
+
+        .actions button {
+            width: auto;
+            flex: 1;
+        }
+
+        input[type="file"] {
+            display: block;
+            background: var(--glass);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            color: var(--muted);
+            padding: 8px;
+            border-radius: 8px;
+            font-size: 13px;
+            cursor: pointer;
+        }
+
+        input[type="file"]::-webkit-file-upload-button {
+            background: var(--glass);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            color: var(--accent);
+            padding: 4px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-family: inherit;
+        }
+
+        input[type="file"]:hover::-webkit-file-upload-button {
+            background: rgba(110, 231, 183, 0.08);
+        }
+
+        @media (max-width: 640px) {
+            body {
+                padding: 12px;
+            }
+
+            .panel {
+                padding: 12px;
+            }
+
+            .task {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .right {
+                width: 100%;
+                flex-direction: row;
+                justify-content: space-between;
+                align-items: center;
+            }
+
+            .actions {
+                width: 100%;
+            }
+
+            .actions button {
+                flex: 1;
+            }
+
+            .form-col {
+                min-width: 100%;
+            }
+        }
+
+        @media (max-width: 400px) {
+            .actions {
+                flex-direction: column;
+            }
+
+            .actions button {
+                width: 100%;
+            }
+        }
+
+        a {
+            color: var(--accent);
+            text-decoration: none;
+            transition: color 0.2s ease;
+        }
+
+        /* Custom Select Wrapper */
+        .custom-select-wrapper {
+            position: relative;
+            width: 100%;
+        }
+
+        /* Hide native select */
+        .custom-select-wrapper select {
+            display: none;
+        }
+
+        .custom-select {
+            background: var(--glass);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            border-radius: 8px;
+            padding: 10px 12px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: clamp(14px, 3vw, 15px);
+        }
+
+        .custom-select::after {
+            content: "▼";
+            font-size: 0.8rem;
+            pointer-events: none;
+        }
+
+        input,
+        textarea,
+        select,
+        button,
+        .custom-select,
+        .custom-options div {
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .custom-options {
+            position: absolute;
+            top: 110%;
+            left: 0;
+            width: 100%;
+            background: var(--glass);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            border-radius: 8px;
+            overflow: hidden;
+            display: none;
+            z-index: 100;
+        }
+
+        .custom-options div {
+            padding: 10px 12px;
+            cursor: pointer;
+            font-size: clamp(14px, 3vw, 15px);
+        }
+
+        .custom-options div:hover {
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .custom-options.open {
+            display: block;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app">
+        <div class="wrap">
+            <header>
+                <div>
+                    <h1>My Tasks</h1>
+                    <div class="sub">Task's persist in your browser's local storage.</div>
+                </div>
+                <div>
+                    <button id="clearLocal" class="btn small ghost">Clear all</button>
+                </div>
+            </header>
+
+            <section class="panel">
+                <form id="taskForm">
+                    <div class="row">
+                        <div class="form-col">
+                            <label for="title">Task title</label>
+                            <input id="title" type="text" placeholder="Short title" required />
+                        </div>
+                        <div class="form-col">
+                            <label for="priority">Priority</label>
+                            <div class="custom-select-wrapper">
+                                <select id="priority">
+                                    <option value="low">Low</option>
+                                    <option value="medium" selected>Medium</option>
+                                    <option value="high">High</option>
+                                </select>
+                                <div class="custom-select" id="fakeSelect">Medium</div>
+                                <div class="custom-options" id="fakeOptions">
+                                    <div data-value="low">Low</div>
+                                    <div data-value="medium">Medium</div>
+                                    <div data-value="high">High</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-col">
+                        <label for="desc">Description <span
+                                style="color:var(--muted);font-size:12px">(optional)</span></label>
+                        <textarea id="desc" placeholder="Short notes..."></textarea>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-col">
+                            <label for="deadline">Deadline</label>
+                            <input id="deadline" type="datetime-local" />
+                        </div>
+                        <div class="form-col">
+                            <label for="file">Attach file</label>
+                            <input id="file" type="file" />
+                        </div>
+                        <div class="form-col">
+                            <div class="actions">
+                                <button type="submit" class="btn">Add task</button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+                <div style="font-size:13px;color:var(--muted);margin-top:10px">Active tasks (drag to reorder)</div>
+                <div id="taskList" class="list" aria-live="polite"></div>
+            </section>
+
+            <footer class="sub">Made with ❤️ by <a href="https://github.com/AmarnathCJD">AmarnathCJD</a></footer>
+        </div>
+    </div>
+
+    <script>
+        let state = { tasks: [] };
+        const els = {
+            form: document.getElementById('taskForm'),
+            title: document.getElementById('title'),
+            file: document.getElementById('file'),
+            desc: document.getElementById('desc'),
+            deadline: document.getElementById('deadline'),
+            priority: document.getElementById('priority'),
+            taskList: document.getElementById('taskList'),
+            clearLocal: document.getElementById('clearLocal')
+        };
+
+        function uid() { return Math.random().toString(36).slice(2, 9) }
+        function loadLocal() {
+            try { const raw = localStorage.getItem('local_tasks'); if (raw) state = JSON.parse(raw) } catch { }
+        }
+        function saveLocal() {
+            localStorage.setItem('local_tasks', JSON.stringify(state));
+        }
+        function addTask(obj) {
+            state.tasks.push({
+                id: uid(),
+                title: obj.title || 'Untitled',
+                desc: obj.desc || '',
+                deadline: obj.deadline || null,
+                priority: obj.priority || 'medium',
+                fileUrl: obj.fileUrl || null,
+                done: false,
+                createdAt: new Date().toISOString()
+            });
+            saveLocal(); render();
+        }
+        function removeTask(id) {
+            state.tasks = state.tasks.filter(t => t.id !== id);
+            saveLocal(); render();
+        }
+        function toggleDone(id) {
+            state.tasks = state.tasks.map(t => t.id === id ? { ...t, done: !t.done } : t);
+            saveLocal(); render();
+        }
+        function formatDeadline(dt) {
+            if (!dt) return '—';
+            try { return new Date(dt).toLocaleString(); } catch { return dt; }
+        }
+        function escapeHtml(s) {
+            return (s || '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+        }
+
+        const realSelect = document.getElementById("priority");
+        const fakeSelect = document.getElementById("fakeSelect");
+        const fakeOptions = document.getElementById("fakeOptions");
+
+        fakeSelect.addEventListener("click", () => {
+            fakeOptions.classList.toggle("open");
+        });
+
+        fakeOptions.querySelectorAll("div").forEach(opt => {
+            opt.addEventListener("click", () => {
+                const value = opt.getAttribute("data-value");
+                realSelect.value = value;
+                fakeSelect.textContent = opt.textContent;
+                fakeOptions.classList.remove("open");
+            });
+        });
+
+        document.addEventListener("click", (e) => {
+            if (!e.target.closest(".custom-select-wrapper")) {
+                fakeOptions.classList.remove("open");
+            }
+        });
+
+
+        function render() {
+            els.taskList.innerHTML = '';
+            state.tasks.forEach(task => {
+                const item = document.createElement('div');
+                item.className = `task ${task.done ? 'done' : ''}`;
+                item.draggable = !task.done;
+                item.dataset.id = task.id;
+
+                item.addEventListener('dragstart', e => {
+                    item.classList.add('dragging');
+                    e.dataTransfer.setData('text/plain', task.id);
+                });
+                item.addEventListener('dragend', () => item.classList.remove('dragging'));
+                item.addEventListener('dblclick', () => toggleDone(task.id));
+
+                const meta = document.createElement('div');
+                meta.className = 'meta';
+                meta.innerHTML = `<div class="title">${escapeHtml(task.title)}</div>
+        <div class="desc">${escapeHtml(task.desc)}</div>
+        <div style="margin-top:6px;font-size:12px;color:var(--muted)">Deadline: ${formatDeadline(task.deadline)}</div>`;
+
+                const right = document.createElement('div');
+                right.className = 'right';
+                const pr = document.createElement('div');
+                pr.className = 'pill ' + (task.priority === 'low' ? 'prio-low' : task.priority === 'high' ? 'prio-high' : 'prio-med');
+                pr.textContent = task.priority.toUpperCase();
+
+                const actions = document.createElement('div');
+                actions.className = 'actions';
+
+                const doneBtn = document.createElement('button');
+                doneBtn.className = 'btn small';
+                doneBtn.textContent = task.done ? 'Undo' : 'Done';
+                doneBtn.addEventListener('click', () => toggleDone(task.id));
+
+                const del = document.createElement('button');
+                del.className = 'btn small danger';
+                del.textContent = 'Delete';
+                del.addEventListener('click', () => { if (confirm('Delete task?')) removeTask(task.id) });
+
+                actions.appendChild(doneBtn); actions.appendChild(del);
+                right.appendChild(pr); right.appendChild(actions);
+
+                item.appendChild(meta); item.appendChild(right);
+
+                item.addEventListener('dragover', e => {
+                    e.preventDefault();
+                    const dragging = document.querySelector('.dragging');
+                    if (!dragging || dragging === item) return;
+                    const rect = item.getBoundingClientRect();
+                    const before = (e.clientY - rect.top) < rect.height / 2;
+                    if (before) item.parentNode.insertBefore(dragging, item);
+                    else item.parentNode.insertBefore(dragging, item.nextSibling);
+                });
+                item.addEventListener('drop', e => {
+                    e.preventDefault();
+                    const ids = Array.from(els.taskList.children).map(ch => ch.dataset.id);
+                    state.tasks = ids.map(id => state.tasks.find(t => t.id === id));
+                    saveLocal(); render();
+                });
+
+                if (task.fileUrl) {
+                    const fileLink = document.createElement('a');
+                    fileLink.href = task.fileUrl;
+                    fileLink.textContent = '📎 Attached file';
+                    fileLink.style.fontSize = '12px';
+                    fileLink.style.color = 'var(--accent)';
+                    fileLink.target = '_blank';
+                    meta.appendChild(fileLink);
+                }
+
+                els.taskList.appendChild(item);
+            });
+        }
+
+        els.clearLocal.addEventListener('click', () => {
+            if (confirm('Clear all saved tasks?')) {
+                localStorage.removeItem('local_tasks');
+                state = { tasks: [] };
+                render();
+            }
+        });
+
+        els.form.addEventListener('submit', async e => {
+            e.preventDefault();
+            const t = els.title.value.trim();
+            if (!t) return;
+
+            let fileUrl = null;
+            if (els.file.files.length) {
+                const file = els.file.files[0];
+                const formData = new FormData();
+                formData.append('file', file);
+
+                try {
+                    const res = await fetch('https://envs.sh', { method: 'POST', body: formData });
+                    fileUrl = await res.text();
+                    fileUrl = fileUrl.trim();
+                } catch (err) {
+                    alert('File upload failed.');
+                }
+            }
+
+            addTask({
+                title: t,
+                desc: els.desc.value.trim(),
+                deadline: els.deadline.value || null,
+                priority: els.priority.value,
+                fileUrl
+            });
+
+            els.form.reset();
+        });
+
+        loadLocal();
+        render();
+    </script>
+</body>
+
+</html>
